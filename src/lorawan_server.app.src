@@ -11,7 +11,8 @@
     {mod, {lorawan_app, []}},
     {env, [
         {applications, [
-            {<<"semtech-mote">>, lorawan_application_semtech_mote}
+            {<<"semtech-mote">>, lorawan_application_semtech_mote},
+            {<<"air-light">>, lorawan_application_air_light}
         ]},
         {connectors, [
             {lorawan_connector_amqp, [<<"amqp">>, <<"amqps">>]},
