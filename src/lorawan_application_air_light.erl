@@ -10,6 +10,7 @@
 -behaviour(lorawan_application).
 
 -export([init/1, handle_join/3, handle_uplink/4, handle_rxq/5, handle_delivery/3]).
+-export([handle_downlink/2]).
 
 -include("lorawan.hrl").
 -include("lorawan_db.hrl").

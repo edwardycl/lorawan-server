@@ -118,6 +118,7 @@ join(cast, {rxq, Gateways0}, {{Network, Profile, Device}, DevAddr, DevNonce}) ->
             lorawan_mac_region:join2_window(Network, Node, RxQ)
     end,
     lorawan_gw_router:downlink({MAC, GWState}, Network, DevAddr, TxQ, PHYPayload),
+    lorawan_gw_router:start_beacon({MAC, GWState}, Network, DevAddr, TxQ),
     % the task has been completed
     {stop, normal, undefined}.
 

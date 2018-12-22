@@ -149,7 +149,8 @@
     health_alerts :: [atom()],
     health_decay :: integer(),
     health_reported :: integer(),
-    health_next :: 'undefined' | calendar:datetime()}).
+    health_next :: 'undefined' | calendar:datetime(),
+    has_downlink :: boolean()}).
 
 -record(ignored_node, {
     devaddr :: devaddr(),

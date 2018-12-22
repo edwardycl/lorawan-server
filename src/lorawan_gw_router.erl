@@ -10,6 +10,7 @@
 -export([alive/3, network_delay/2, report/2, uplinks/1, downlink/5, downlink_error/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([update_dwell/2]).
+-export([start_beacon/4])
 
 -include("lorawan.hrl").
 -include("lorawan_db.hrl").
@@ -135,7 +136,21 @@ handle_info(submit_stats, #state{request_cnt=RequestCnt, error_cnt=ErrorCnt}=Sta
                 end,
             mnesia:write(Server)
         end),
-    {noreply, State#state{request_cnt=0, error_cnt=0}}.
+    {noreply, State#state{request_cnt=0, error_cnt=0}},
+
+handle_info({beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}, State) ->
+    case mnesia:dirty_read(node, DevAddr) of
+        [] -> {noreply, State};
+        [#node{has_downlink=HasDownlink}=Node] ->
+            {ok, PHYPayload} = lorawan_mac:encode_beacon(Network, Node),
+            downlink({MAC, GWState}, Network, DevAddr, TxQ, PHYPayload),
+            timer:send_after(BeaconInterval*1000, {beacon, {MAC, GWState}, Network, DevAddr, TxQ}),
+            {noreply, State}.
+    end.
+
+start_beacon({MAC, GWState}, Network, DevAddr, TxQ) ->
+    {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
+    timer:send_after(BeaconInterval*1000, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}).
 
 terminate(Reason, _State) ->
     % record graceful shutdown in the log

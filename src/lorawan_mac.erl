@@ -397,7 +397,8 @@ create_node(Gateways, {#network{netid=NetID}=Network, Profile, #device{deveui=De
         adr_use=initial_adr(Network), adr_failed=[],
         dcycle_use=Network#network.dcycle_init,
         rxwin_use=accept_rxwin(Profile, Network), rxwin_failed=[],
-        devstat_fcnt=undefined, last_qs=[]},
+		devstat_fcnt=undefined, last_qs=[],
+		has_downlink=false},
     Node2 =
         case mnesia:read(node, DevAddr, write) of
             [#node{location=Location, first_reset=First, reset_count=Cnt, last_rx=undefined, devstat=Stats}]
@@ -440,10 +441,11 @@ encode_accept(#network{netid=NetID, rx1_delay=RxDelay, cflist=CFList}, #device{a
         #node{devaddr=DevAddr, rxwin_use={RX1DROffset, RX2DataRate, _}}=Node, AppNonce) ->
     lager:debug("Join-Accept ~p, netid ~p, cflist ~p, rx1droff ~p, rx2dr ~p, appkey ~p, appnce ~p",
         [binary_to_hex(DevAddr), NetID, CFList, RX1DROffset, RX2DataRate,
-        binary_to_hex(AppKey), binary_to_hex(AppNonce)]),
+		binary_to_hex(AppKey), binary_to_hex(AppNonce)]),
+    {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
     MHDR = <<2#001:3, 0:3, 0:2>>,
     MACPayload = <<AppNonce/binary, NetID/binary, (reverse(DevAddr))/binary, 0:1,
-        RX1DROffset:3, RX2DataRate:4, RxDelay, (encode_cflist(CFList))/binary>>,
+        RX1DROffset:3, RX2DataRate:4, RxDelay, BeaconInterval:16, (encode_cflist(CFList))/binary>>,
     MIC = aes_cmac:aes_cmac(AppKey, <<MHDR/binary, MACPayload/binary>>, 4),
 
     % yes, decrypt; see LoRaWAN specification, Section 6.2.5
@@ -488,7 +490,16 @@ encode_multicast(DevAddr, TxData) ->
                 ok = mnesia:write(NewD),
                 NewD
             end),
-    {ok, G, encode_frame(DevAddr, NwkSKey, AppSKey, FCntDown, 0, 0, <<>>, TxData)}.
+	{ok, G, encode_frame(DevAddr, NwkSKey, AppSKey, FCntDown, 0, 0, <<>>, TxData)}.
+
+encode_beacon(#network{netid=NetID}, #node{devaddr=DevAddr, has_downlink=HasDownlink}=Node) ->
+    lager:debug("Send-Beacon ~p, netid ~p", [binary_to_hex(DevAddr), NetID]),
+    {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
+    MHDR = <<2#111:3, 0:3, 0:2>>,
+    MACPayload = case HasDownlink of
+		true -> <<BeaconInterval:16, 2#00000001:8>>;
+		false -> <<BeaconInterval:16, 2#00000000:8>>,
+    {ok, <<MHDR/binary, MACPayload/binary>>}.
 
 get_adr_flag(ADR) when ADR == undefined; ADR == 0 -> 0;
 get_adr_flag(ADR) when ADR > 0 -> 1.
