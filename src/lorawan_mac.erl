@@ -442,10 +442,10 @@ encode_accept(#network{netid=NetID, rx1_delay=RxDelay, cflist=CFList}, #device{a
     lager:debug("Join-Accept ~p, netid ~p, cflist ~p, rx1droff ~p, rx2dr ~p, appkey ~p, appnce ~p",
         [binary_to_hex(DevAddr), NetID, CFList, RX1DROffset, RX2DataRate,
 		binary_to_hex(AppKey), binary_to_hex(AppNonce)]),
-    {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
+    % {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
     MHDR = <<2#001:3, 0:3, 0:2>>,
     MACPayload = <<AppNonce/binary, NetID/binary, (reverse(DevAddr))/binary, 0:1,
-        RX1DROffset:3, RX2DataRate:4, RxDelay, BeaconInterval:16, (encode_cflist(CFList))/binary>>,
+        RX1DROffset:3, RX2DataRate:4, RxDelay, (encode_cflist(CFList))/binary>>,
     MIC = aes_cmac:aes_cmac(AppKey, <<MHDR/binary, MACPayload/binary>>, 4),
 
     % yes, decrypt; see LoRaWAN specification, Section 6.2.5
