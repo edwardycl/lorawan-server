@@ -42,8 +42,8 @@
         {server_stats_interval, 60}, % [s]
         {slack_server, {"slack.com", 443}},
         {event_lifetime, 86400},
-        % beacon frame interval in seconds
-        {beacon_interval, 3}
+        % beacon frame interval in milliseconds
+        {beacon_interval, 3000}
     ]},
     {applications, [kernel, stdlib, sasl, os_mon, lager, mnesia, eid,
         cowboy, gun, jsx, iso8601, gen_smtp, amqp_client, emqttc, erlmongo]}]}.
