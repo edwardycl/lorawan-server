@@ -141,17 +141,18 @@ handle_info(submit_stats, #state{request_cnt=RequestCnt, error_cnt=ErrorCnt}=Sta
 handle_info({beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}, State) ->
     lager:debug("Beacon sent to ~s", [lorawan_utils:binary_to_hex(DevAddr)]),
     case mnesia:dirty_read(node, DevAddr) of
-        [] -> {noreply, State};
+        [] ->
+            timer:send_after(BeaconInterval, {beacon, {MAC, GWState}, Network, DevAddr, TxQ});
         [#node{has_downlink=_HasDownlink}=Node] ->
             {ok, PHYPayload} = lorawan_mac:encode_beacon(Network, Node),
             downlink({MAC, GWState}, Network, DevAddr, TxQ, PHYPayload),
-            timer:send_after(BeaconInterval, {beacon, {MAC, GWState}, Network, DevAddr, TxQ}),
-            {noreply, State}
-    end.
+            timer:send_after(BeaconInterval, {beacon, {MAC, GWState}, Network, DevAddr, TxQ})
+    end,
+    {noreply, State}.
 
 start_beacon({MAC, GWState}, Network, DevAddr, TxQ) ->
-    lager:debug("Start beacon to ~s", [lorawan_utils:binary_to_hex(DevAddr)]),
     {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
+    lager:debug("Start beacon to ~s with interval ~n", [lorawan_utils:binary_to_hex(DevAddr), BeaconInterval]),
     timer:send_after(BeaconInterval, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}).
 
 terminate(Reason, _State) ->
