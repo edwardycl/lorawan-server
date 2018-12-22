@@ -5,7 +5,7 @@
 %
 -module(lorawan_mac).
 
--export([ingest_frame/2, handle_accept/4, load_profile/1, encode_unicast/4, encode_multicast/2]).
+-export([ingest_frame/2, handle_accept/4, load_profile/1, encode_unicast/4, encode_multicast/2, encode_beacon/2]).
 % for unit testing
 -export([cipher/5, b0/4]).
 -import(lorawan_utils, [binary_to_hex/1, hex_to_binary/1, reverse/1]).
@@ -492,7 +492,7 @@ encode_multicast(DevAddr, TxData) ->
             end),
 	{ok, G, encode_frame(DevAddr, NwkSKey, AppSKey, FCntDown, 0, 0, <<>>, TxData)}.
 
-encode_beacon(#network{netid=NetID}, #node{devaddr=DevAddr, has_downlink=HasDownlink}=Node) ->
+encode_beacon(#network{netid=NetID}, #node{devaddr=DevAddr, has_downlink=HasDownlink}) ->
     lager:debug("Send-Beacon ~p, netid ~p", [binary_to_hex(DevAddr), NetID]),
     {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
     MHDR = <<2#111:3, 0:3, 0:2>>,
