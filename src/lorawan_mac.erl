@@ -498,7 +498,8 @@ encode_beacon(#network{netid=NetID}, #node{devaddr=DevAddr, has_downlink=HasDown
     MHDR = <<2#111:3, 0:3, 0:2>>,
     MACPayload = case HasDownlink of
 		true -> <<BeaconInterval:16, 2#00000001:8>>;
-		false -> <<BeaconInterval:16, 2#00000000:8>>,
+        false -> <<BeaconInterval:16, 2#00000000:8>>
+    end,
     {ok, <<MHDR/binary, MACPayload/binary>>}.
 
 get_adr_flag(ADR) when ADR == undefined; ADR == 0 -> 0;
