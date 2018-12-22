@@ -140,19 +140,18 @@ handle_info(submit_stats, #state{request_cnt=RequestCnt, error_cnt=ErrorCnt}=Sta
 
 handle_info({beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}, State) ->
     case mnesia:dirty_read(node, DevAddr) of
-        [] ->
-            {ok, _} = timer:send_after(BeaconInterval, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ});
+        [] -> {noreply, State};
         [#node{has_downlink=_HasDownlink}=Node] ->
             {ok, PHYPayload} = lorawan_mac:encode_beacon(Network, Node),
             downlink({MAC, GWState}, Network, DevAddr, TxQ, PHYPayload),
-            {ok, _} = timer:send_after(BeaconInterval, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ})
-    end,
-    {noreply, State}.
+            {ok, _} = timer:send_after(BeaconInterval, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}),
+            {noreply, State}
+    end.
 
 start_beacon({MAC, GWState}, Network, DevAddr, TxQ) ->
     {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
     lager:debug("Start beacon to ~s with interval ~p", [lorawan_utils:binary_to_hex(DevAddr), BeaconInterval]),
-    {ok, _} = timer:send_after(BeaconInterval, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}).
+    {ok, _} = timer:send_after(BeaconInterval, ?MODULE, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}).
 
 terminate(Reason, _State) ->
     % record graceful shutdown in the log
