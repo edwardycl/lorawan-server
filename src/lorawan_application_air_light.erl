@@ -11,6 +11,7 @@
 
 -export([init/1, handle_join/3, handle_uplink/4, handle_rxq/5, handle_delivery/3]).
 
+
 -include("lorawan.hrl").
 -include("lorawan_db.hrl").
 
@@ -29,11 +30,24 @@ handle_uplink(_Context, _RxQ, _LastMissed, _Frame) ->
 
 % the data structure is explained in
 % https://github.com/Lora-net/LoRaMac-node/blob/master/src/apps/LoRaMac/classA/LoRaMote/main.c#L207
-handle_rxq({_Network, _Profile, #node{devaddr=DevAddr}}, _Gateways, _WillReply,
+handle_rxq({_Network, _Profile, #node{devaddr=DevAddr}=Node}, _Gateways, _WillReply,
         #frame{port=2, data= <<_LED, Press:16, Temp:16, _AltBar:16, Batt, _Lat:24, _Lon:24, _AltGps:16>>}, []) ->
     lager:debug("PUSH_DATA ~s ~w ~w ~w", [lorawan_utils:binary_to_hex(DevAddr), Press, Temp, Batt]),
     TxDutyCycle = ((Temp div 100) rem 10) + 10,
-    {send, #txdata{port=2, data = <<TxDutyCycle:16>>}}.
+    case TxDutyCycle of
+        T when T > 15 -> send_hello(Node);
+        _Else -> ok
+    end,
+    {send, #txdata{port=2, data = <<TxDutyCycle:16>>}};
+
+handle_rxq({_Network, _Profile, #node{has_downlink=true}=Node}, _Gateways, _WillReply, #frame{port=3}, []) ->
+    Node2 = Node#node{has_downlink=false},
+    mnesia:write(node, Node2),
+    {send, #txdata{port=2, data = <<"Hello">>}}.
+
+send_hello(Node) ->
+    mnesia:write(node, Node#node{has_downlink=true}),
+    ok.
 
 handle_delivery({_Network, _Profile, _Node}, _Result, _Receipt) ->
     ok.
