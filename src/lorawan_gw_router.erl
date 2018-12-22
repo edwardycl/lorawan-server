@@ -136,7 +136,7 @@ handle_info(submit_stats, #state{request_cnt=RequestCnt, error_cnt=ErrorCnt}=Sta
                 end,
             mnesia:write(Server)
         end),
-    {noreply, State#state{request_cnt=0, error_cnt=0}},
+    {noreply, State#state{request_cnt=0, error_cnt=0}};
 
 handle_info({beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}, State) ->
     case mnesia:dirty_read(node, DevAddr) of
