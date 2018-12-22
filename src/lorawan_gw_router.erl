@@ -150,6 +150,7 @@ handle_info({beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}, Sta
     end.
 
 start_beacon({MAC, GWState}, Network, DevAddr, TxQ) ->
+    lager:debug("Start beacon to ~s", [lorawan_utils:binary_to_hex(DevAddr)]),
     {ok, BeaconInterval} = application:get_env(lorawan_server, beacon_interval),
     timer:send_after(BeaconInterval, {beacon, BeaconInterval, {MAC, GWState}, Network, DevAddr, TxQ}).
 
